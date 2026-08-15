@@ -1,17 +1,9 @@
 {
-    "scan_timestamp": "2026-08-15T15:30:00Z",
-    "domain": "sec.lab.local",
-    "summary": {
-        "total_users": 42,
-        "inactive_accounts_flagged": 3,
-        "password_never_expires_count": 5,
-        "domain_admins_count": 2
-    },
-    "findings": [
-        {
-            "category": "Inactive Account",
-            "account": "test.user1",
-            "last_logon": "2025-11-10"
-        }
-    ]
+  "audit_timestamp": "2026-08-15T19:48:00Z",
+  "domain": "DC-Core-09",
+  "findings": {
+    "privileged_group_members": [],
+    "stale_accounts": [],
+    "password_never_expires_accounts": []
+  }
 }

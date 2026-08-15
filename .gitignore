@@ -1,11 +1,7 @@
-# Logs and temporary files
-*.log
-*.tmp
-# OS generated files
+# OS files
 .DS_Store
 Thumbs.db
 
-# Sensitive local data exports
-data/*.json
-data/*.csv
-!data/.gitkeep
+# Logs and temporary workspace files
+logs/
+*.log
