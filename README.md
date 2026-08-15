@@ -1,75 +1,83 @@
-# Home Lab Project: Active Directory Security & Domain Hygiene Auditor
+# Home Lab Project: Splunk Security Detection Engineering & Dashboards
 
 ## Repository Structure
 
 ```text
-ad-security-auditor/
+splunk-detection-lab/
+├── assets/
+│   └── execution.png           # Splunk search verification and query execution screenshot
 ├── configs/
-│   └── audit_config.json       # Configuration thresholds for inactive accounts and groups
+│   └── inputs.conf             # Forwarder and log ingestion telemetry parameters
 ├── data/
-│   └── audit_report.json       # Structured JSON audit report export
-├── scripts/
-│   └── Audit-ADSecurity.ps1    # PowerShell audit script for domain hygiene checks
+│   └── sample_events.json      # Structured sample event logs for testing
+├── queries/
+│   └── security_detections.spl # Custom Search Processing Language (SPL) detection rules
 ├── .gitignore
 └── README.md
 ```
 
 ## 1. Project Overview & Architecture
 
-- **Environment**: Windows Server 2022 Active Directory (`DC-Core`) home lab environment managed via Ubuntu Server workspace.
-- **Core Tools**: PowerShell ActiveDirectory module, JSON configuration management, Git, and GitHub.
-- **Objective**: Automate the assessment of Active Directory domain hygiene. This auditing utility inspects domain security posture by identifying stale/inactive user accounts, checking for risky password policies (such as accounts configured with "Password Never Expires"), and reviewing privileged group memberships (Domain Admins).
+- **Environment**: Home lab SIEM architecture featuring Splunk Enterprise, Splunk Universal Forwarders, and Windows Server 2022 Active Directory telemetry sources.
+- **Core Tools**: Splunk Enterprise, Search Processing Language (SPL), Sysmon, Windows Security Event Logs, Git, and GitHub.
+- **Objective**: Design, build, and document custom security detection engineering rules, threat hunting queries, and operational monitoring dashboards within Splunk. This repository formalizes detection logic to catch common administrative abuse, lateral movement, and authentication anomalies.
 
-## 2. Key Audit Capabilities
+## 2. Detection Engineering Library & SPL Rules
 
-- **Privileged Access Review**: Enumerates and validates members of high-privilege groups (`Domain Admins`, `Enterprise Admins`) to detect unauthorized escalations.
-- **Stale Account Detection**: Flags user accounts that have been inactive past a configurable threshold (default: 90 days).
-- **Password Policy Enforcement**: Identifies active user accounts where password expiration is disabled.
-- **Structured Telemetry Export**: Exports findings into standardized JSON reports (`data/audit_report.json`) for tracking and potential SIEM ingestion.
+The repository includes production-ready detection queries organized within `queries/security_detections.spl`:
 
-## 3. Configuration Parameters
+### Brute-Force Authentication Tracking (`EventCode 4625`)
 
-The tool relies on configurable parameters defined in `configs/audit_config.json` to tailor audit thresholds to organizational or home lab baselines:
+Aggregates failed login attempts by source IP address and target account, triggering alerts when high-frequency thresholds are breached.
 
-- `inactive_account_threshold_days`: Defines the inactivity window (default: `90` days) used to identify stale user accounts.
-- `password_never_expires_check`: Boolean toggle to enable or disable auditing for accounts exempted from password expiration rules.
-- `privileged_groups`: Array of high-value administrative groups targeted for membership validation.
-
-## 4. Usage & Execution Walkthrough
-
-### Prerequisites & Environment Setup
-
-- Ensure you have administrative access to your Active Directory Domain Controller (`DC-Core`) or a management workstation with the Remote Server Administration Tools (RSAT) and the ActiveDirectory PowerShell module installed.
-- Ensure the repository files are accessible locally on the target machine.
-
-### Step-by-Step Execution Guide
-
-1. Open PowerShell with elevated administrator rights (`Run as Administrator`).
-2. Navigate to the root directory of the repository where the script is located.
-3. Modify the PowerShell execution policy for the current session to allow script execution:
-
-```powershell
-Set-ExecutionPolicy -ExecutionPolicy Bypass -Scope Process -Force
+```spl
+index=windows sourcetype=WinEventLog:Security EventCode=4625 
+| stats count(_raw) as failed_attempts by Source_Network_Address Account_Name 
+| where failed_attempts > 5 
+| sort -failed_attempts
 ```
 
-4. Execute the auditing script from the `scripts/` directory:
+### Privileged Group Modifications (`EventCode 4728`)
 
-```powershell
-.\scripts\Audit-ADSecurity.ps1
+Monitors additions of user accounts to security-enabled global groups (such as `Domain Admins`), capturing potential persistence and privilege escalation vectors.
+
+```spl
+index=windows sourcetype=WinEventLog:Security EventCode=4728 
+| table _time ComputerName Account_Name GroupName Caller_User_Name
 ```
 
-### Interpreting Console Output
+### Suspicious PowerShell Execution (Sysmon `EventCode 1`)
 
-- **Domain Context**: Verifies connectivity and confirms the distinguished name (DN) of the targeted Active Directory domain.
-- **Privileged Group Table**: Displays current members of the `Domain Admins` group, detailing their Name, SamAccountName, and object class to quickly spot anomalies or unauthorized accounts.
-- **Stale Account List**: Outputs any enabled user accounts whose `LastLogonDate` exceeds the configured threshold. If none are found, a success confirmation is displayed.
-- **Exempted Password Accounts**: Lists active accounts configured with `PasswordNeverExpires` set to true, highlighting potential credential risk vectors.
+Flags obfuscated command lines, encoded payloads, or memory-injection routines by analyzing process creation telemetry.
+
+```spl
+index=windows sourcetype=XmlWinEventLog:Microsoft-Windows-Sysmon/Operational EventCode=1 
+(CommandLine="*EncodedCommand*" OR CommandLine="*Invoke-Expression*" OR CommandLine="*DownloadString*") 
+| table _time ComputerName User CommandLine ParentImage
+```
+
+## 3. Configuration & Ingestion Parameters
+
+- **Log Forwarding**: Configured via Splunk Universal Forwarders on domain endpoints streaming Windows Event Logs and Sysmon XML logs to the central Splunk Enterprise indexer.
+- **Index Partitioning**: Telemetry is segregated into dedicated indexes (e.g., `windows`, `sysmon`) to optimize search performance and role-based access control.
+
+## 4. Usage & Query Execution Guide
+
+1. Log into your Splunk Enterprise Web UI with appropriate analyst privileges.
+2. Navigate to Search & Reporting.
+3. Copy desired detection rules from `queries/security_detections.spl` into the search bar.
+4. Set the appropriate global time range (e.g., Last 24 hours or Real-time) and execute the query to validate environment ingestion.
 
 ## 5. File & Directory Descriptions
 
 | Path | Description |
 |---|---|
-| `configs/` | Contains auditing thresholds and configuration profiles (`audit_config.json`). |
-| `data/` | Stores structured security findings and JSON report exports (`audit_report.json`). |
-| `scripts/` | Contains core PowerShell auditing automation (`Audit-ADSecurity.ps1`). |
-| `README.md` | Comprehensive technical project documentation. |
+| `assets/` | Contains visual verification screenshots of successful query execution. |
+| `configs/` | Contains forwarder ingestion configurations (`inputs.conf`). |
+| `data/` | Stores sample structured event payloads for offline testing. |
+| `queries/` | Houses custom Search Processing Language (SPL) detection rules. |
+| `README.md` | Comprehensive technical documentation and threat detection guide. |
+
+## 6. Execution Output & Verification
+
+![Execution Output & Verification](assets/execution.png)

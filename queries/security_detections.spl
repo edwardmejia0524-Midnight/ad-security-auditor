@@ -1,0 +1,14 @@
+# Detection 1: Brute-Force Authentication Tracking (EventCode 4625)
+index=windows sourcetype=WinEventLog:Security EventCode=4625 
+| stats count(_raw) as failed_attempts by Source_Network_Address Account_Name 
+| where failed_attempts > 5 
+| sort -failed_attempts
+
+# Detection 2: Privileged Group Modifications (EventCode 4728)
+index=windows sourcetype=WinEventLog:Security EventCode=4728 
+| table _time ComputerName Account_Name GroupName Caller_User_Name
+
+# Detection 3: Suspicious PowerShell Execution (Sysmon EventCode 1)
+index=windows sourcetype=XmlWinEventLog:Microsoft-Windows-Sysmon/Operational EventCode=1 
+(CommandLine="*EncodedCommand*" OR CommandLine="*Invoke-Expression*" OR CommandLine="*DownloadString*") 
+| table _time ComputerName User CommandLine ParentImage

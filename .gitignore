@@ -1,12 +1,11 @@
 # Logs and temporary files
 *.log
 *.tmp
-*.bak
-
 # OS generated files
 .DS_Store
 Thumbs.db
 
-# Sensitive local data or reports
+# Sensitive local data exports
 data/*.json
+data/*.csv
 !data/.gitkeep
