@@ -1,0 +1,12 @@
+# Logs and temporary files
+*.log
+*.tmp
+*.bak
+
+# OS generated files
+.DS_Store
+Thumbs.db
+
+# Sensitive local data or reports
+data/*.json
+!data/.gitkeep
