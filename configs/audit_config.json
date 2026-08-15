@@ -1,0 +1,11 @@
+{
+    "inactive_account_threshold_days": 90,
+    "password_never_expires_check": true,
+    "privileged_groups": [
+        "Domain Admins",
+        "Enterprise Admins",
+        "Schema Admins",
+        "Administrators"
+    ],
+    "export_format": "json"
+}
