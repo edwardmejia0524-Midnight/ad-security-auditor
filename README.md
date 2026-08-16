@@ -1,24 +1,30 @@
 # Home Lab Project: Active Directory Security & Domain Hygiene Auditor
 
-## Repository Structure
-
-```text
-ad-security-auditor/
-├── configs/
-│   └── audit_config.json       # Configuration thresholds for inactive accounts and groups
-├── data/
-│   └── audit_report.json       # Structured JSON audit report export
-├── scripts/
-│   └── Audit-ADSecurity.ps1    # PowerShell audit script for domain hygiene checks
-├── .gitignore
-└── README.md
-```
-
 ## 1. Project Overview & Architecture
 
 - **Environment**: Windows Server 2022 Active Directory (`DC-Core`) home lab environment managed via Ubuntu Server workspace.
 - **Core Tools**: PowerShell ActiveDirectory module, JSON configuration management, Git, and GitHub.
 - **Objective**: Automate the assessment of Active Directory domain hygiene. This auditing utility inspects domain security posture by identifying stale/inactive user accounts, checking for risky password policies (such as accounts configured with "Password Never Expires"), and reviewing privileged group memberships (Domain Admins).
+
+---
+
+## Repository Structure
+
+```text
+ad-security-auditor/
+├── assets/
+│   └── execution.png           # Proof-of-execution terminal output
+├── configs/
+│   └── audit_config.json       # Configuration thresholds for inactive accounts and groups
+├── data/
+│   └── audit_report.json       # Structured JSON audit report export
+├── queries/
+│   └── security_detections.spl # SPL security queries and event detection logic
+├── scripts/
+│   └── Audit-ADSecurity.ps1    # PowerShell audit script for domain hygiene checks
+├── .gitignore
+└── README.md
+```
 
 ## 2. Key Audit Capabilities
 
@@ -69,7 +75,13 @@ Set-ExecutionPolicy -ExecutionPolicy Bypass -Scope Process -Force
 
 | Path | Description |
 |---|---|
+| `assets/` | Contains visual evidence and proof-of-execution screenshots (`execution.png`). |
 | `configs/` | Contains auditing thresholds and configuration profiles (`audit_config.json`). |
 | `data/` | Stores structured security findings and JSON report exports (`audit_report.json`). |
+| `queries/` | Contains SPL hunting and security detection queries (`security_detections.spl`). |
 | `scripts/` | Contains core PowerShell auditing automation (`Audit-ADSecurity.ps1`). |
 | `README.md` | Comprehensive technical project documentation. |
+
+## 6. Proof of Execution
+
+![Proof of Execution](assets/execution.png)
